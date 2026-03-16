@@ -5,19 +5,23 @@ import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Avatar from '@mui/material/Avatar';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
+import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
@@ -32,6 +36,7 @@ type Exam = { _id: string; name: string; code?: string; syllabus?: Syllabus };
 type MajorExam = { _id: string; name: string; code?: string; logoUrl?: string; exams: Exam[] };
 
 const MAX_NAME_LENGTH = 60;
+const MAX_LOGO_BYTES = 2 * 1024 * 1024; // 2MB
 
 export function ExamManagement(): React.JSX.Element {
   const [majorExams, setMajorExams] = React.useState<MajorExam[]>([]);
@@ -109,10 +114,18 @@ export function ExamManagement(): React.JSX.Element {
     const formData = new FormData();
     formData.append('file', file);
 
-    await fetch(`/api/major-exams/${major._id}/logo`, {
+    const response = await fetch(`/api/major-exams/${major._id}/logo`, {
       method: 'POST',
       body: formData,
     });
+    if (!response.ok) {
+      const payload: unknown = await response.json().catch(() => null);
+      const message =
+        payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+          ? payload.error
+          : 'Logo upload failed';
+      throw new Error(message);
+    }
     await refresh();
   };
 
@@ -359,9 +372,50 @@ function MajorExamList({
   value: string;
   onValueChange: (value: string) => void;
 }): React.JSX.Element {
+  const [uploadingMajorId, setUploadingMajorId] = React.useState<string | null>(null);
+  const [snackbar, setSnackbar] = React.useState<
+    | { open: false; severity?: never; message?: never }
+    | { open: true; severity: 'success' | 'error'; message: string }
+  >({ open: false });
+
+  const handleCloseSnackbar = React.useCallback(() => {
+    setSnackbar({ open: false });
+  }, []);
+
+  const handleUploadLogo = React.useCallback(
+    async (major: MajorExam, file: File): Promise<void> => {
+      if (!file.type.startsWith('image/')) {
+        setSnackbar({ open: true, severity: 'error', message: 'Please select an image file.' });
+        return;
+      }
+      if (file.size > MAX_LOGO_BYTES) {
+        setSnackbar({ open: true, severity: 'error', message: 'Image is too large. Max size is 2MB.' });
+        return;
+      }
+
+      setUploadingMajorId(major._id);
+      try {
+        await onUploadLogo(major, file);
+        setSnackbar({ open: true, severity: 'success', message: 'Logo updated.' });
+      } catch (error) {
+        setSnackbar({
+          open: true,
+          severity: 'error',
+          message: error instanceof Error ? error.message : 'Logo upload failed.',
+        });
+      } finally {
+        setUploadingMajorId(null);
+      }
+    },
+    [onUploadLogo]
+  );
+
   return (
     <Card>
-      <CardHeader title="Major Exams" />
+      <CardHeader
+        title="Major Exams"
+        subheader="Upload a square image (max 2MB). Changes may take a moment to appear in the app."
+      />
       <CardContent sx={{ p: 2 }}>
         <Stack direction="row" spacing={1}>
           <TextField
@@ -394,29 +448,16 @@ function MajorExamList({
                   <ListItemText primary={major.name} />
                 </Box>
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <IconButton
-                    aria-label="Upload major exam logo"
-                    size="small"
-                    component="label"
-                    onClick={(event): void => {
+                  <LogoUploadIconButton
+                    disabled={uploadingMajorId === major._id}
+                    loading={uploadingMajorId === major._id}
+                    onFileSelected={(file) => {
+                      void handleUploadLogo(major, file);
+                    }}
+                    onClick={(event) => {
                       event.stopPropagation();
                     }}
-                  >
-                    <UploadSimpleIcon fontSize="var(--icon-fontSize-md)" />
-                    <input
-                      hidden
-                      type="file"
-                      accept="image/*"
-                      onChange={(event): void => {
-                        event.stopPropagation();
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          onUploadLogo(major, file);
-                        }
-                        event.target.value = '';
-                      }}
-                    />
-                  </IconButton>
+                  />
                   <IconButton aria-label="Rename major exam" size="small" onClick={(): void => onRename(major)}>
                     <PencilSimpleIcon fontSize="var(--icon-fontSize-md)" />
                   </IconButton>
@@ -435,7 +476,72 @@ function MajorExamList({
           ))}
         </List>
       </CardContent>
+      <Snackbar
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        autoHideDuration={5000}
+        onClose={handleCloseSnackbar}
+        open={snackbar.open}
+      >
+        {snackbar.open ? (
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} variant="filled" sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        ) : (
+          <span />
+        )}
+      </Snackbar>
     </Card>
+  );
+}
+
+function LogoUploadIconButton({
+  disabled,
+  loading,
+  onFileSelected,
+  onClick,
+}: {
+  disabled: boolean;
+  loading: boolean;
+  onFileSelected: (file: File) => void;
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+}): React.JSX.Element {
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+  return (
+    <React.Fragment>
+      <input
+        ref={inputRef}
+        hidden
+        type="file"
+        accept="image/*"
+        onChange={(event): void => {
+          const file = event.target.files?.[0];
+          if (file) {
+            onFileSelected(file);
+          }
+          event.target.value = '';
+        }}
+      />
+      <Tooltip title={disabled ? 'Uploading…' : 'Upload logo'}>
+        <span>
+          <IconButton
+            aria-label="Upload major exam logo"
+            size="small"
+            disabled={disabled}
+            onClick={(event): void => {
+              onClick(event);
+              inputRef.current?.click();
+            }}
+          >
+            {loading ? (
+              <CircularProgress color="inherit" size={18} thickness={5} />
+            ) : (
+              <UploadSimpleIcon fontSize="var(--icon-fontSize-md)" />
+            )}
+          </IconButton>
+        </span>
+      </Tooltip>
+    </React.Fragment>
   );
 }
 

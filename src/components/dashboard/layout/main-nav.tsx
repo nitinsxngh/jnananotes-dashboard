@@ -17,6 +17,7 @@ import { ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 
 import { usePopover } from '@/hooks/use-popover';
+import { SyncExamsToFirestoreButton } from '@/components/dashboard/sync/sync-exams-to-firestore-button';
 
 import { MobileNav } from './mobile-nav';
 import { UserPopover } from './user-popover';
@@ -92,6 +93,7 @@ export function MainNav(): React.JSX.Element {
             </Tooltip>
           </Stack>
           <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
+            <SyncExamsToFirestoreButton />
             <Tooltip title="Notifications">
               <Badge badgeContent={loginEvents.length} color="success" variant={loginEvents.length > 0 ? 'dot' : 'standard'}>
                 <IconButton
