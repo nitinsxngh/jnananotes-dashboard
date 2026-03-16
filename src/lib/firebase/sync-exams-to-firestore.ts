@@ -130,7 +130,7 @@ export async function syncExamsToFirestore(): Promise<void> {
 export async function syncExamsToFirestoreSafe(): Promise<void> {
   try {
     await syncExamsToFirestore();
-  } catch (err) {
-    console.error('Firestore exam sync failed:', err);
+  } catch (error) {
+    console.error('Firestore exam sync failed:', error);
   }
 }

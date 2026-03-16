@@ -11,10 +11,10 @@ export async function POST(): Promise<NextResponse> {
   try {
     await syncExamsToFirestore();
     return NextResponse.json({ success: true, message: 'Synced to Firestore' });
-  } catch (err) {
-    console.error('Sync to Firestore failed:', err);
+  } catch (error) {
+    console.error('Sync to Firestore failed:', error);
     return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'Sync failed' },
+      { success: false, error: error instanceof Error ? error.message : 'Sync failed' },
       { status: 500 }
     );
   }
