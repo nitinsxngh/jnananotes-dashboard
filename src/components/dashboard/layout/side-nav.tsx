@@ -5,8 +5,11 @@ import RouterLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/CaretUpDown';
 
 import type { NavItemConfig } from '@/types/nav';
@@ -17,7 +20,13 @@ import { Logo } from '@/components/core/logo';
 import { navItems } from './config';
 import { navIcons } from './nav-icons';
 
-export function SideNav(): React.JSX.Element {
+export function SideNav({
+  collapsed = false,
+  onToggle,
+}: {
+  collapsed?: boolean;
+  onToggle?: () => void;
+}): React.JSX.Element {
   const pathname = usePathname();
 
   return (
@@ -52,46 +61,78 @@ export function SideNav(): React.JSX.Element {
         <Box
           component={RouterLink}
           href={paths.home}
-          sx={{ color: 'var(--mui-palette-common-white)', display: 'inline-flex', textDecoration: 'none' }}
-        >
-          <Logo height={32} width={122} />
-        </Box>
-        <Box
           sx={{
-            alignItems: 'center',
-            backgroundColor: 'var(--mui-palette-neutral-950)',
-            border: '1px solid var(--mui-palette-neutral-700)',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            display: 'flex',
-            p: '4px 12px',
+            color: 'var(--mui-palette-common-white)',
+            display: 'inline-flex',
+            textDecoration: 'none',
+            justifyContent: collapsed ? 'center' : undefined,
           }}
         >
-          <Box sx={{ flex: '1 1 auto' }}>
-            <Typography color="var(--mui-palette-neutral-400)" variant="body2">
-              Workspace
-            </Typography>
-            <Typography color="inherit" variant="subtitle1">
-              Jnana Management System
-            </Typography>
-          </Box>
-          <CaretUpDownIcon />
+          <Logo height={32} width={collapsed ? 32 : 122} />
         </Box>
+        {collapsed ? null : (
+          <Box
+            sx={{
+              alignItems: 'center',
+              backgroundColor: 'var(--mui-palette-neutral-950)',
+              border: '1px solid var(--mui-palette-neutral-700)',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              p: '4px 12px',
+            }}
+          >
+            <Box sx={{ flex: '1 1 auto' }}>
+              <Typography color="var(--mui-palette-neutral-400)" variant="body2">
+                Workspace
+              </Typography>
+              <Typography color="inherit" variant="subtitle1">
+                Jnana Management System
+              </Typography>
+            </Box>
+            <CaretUpDownIcon />
+          </Box>
+        )}
+        {onToggle && !collapsed ? (
+          <Tooltip title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+            <IconButton
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              onClick={onToggle}
+              sx={{
+                alignSelf: 'flex-end',
+                color: 'var(--mui-palette-neutral-200)',
+                border: '1px solid var(--mui-palette-neutral-700)',
+                borderRadius: 1,
+              }}
+              size="small"
+            >
+              <ArrowLeftIcon />
+            </IconButton>
+          </Tooltip>
+        ) : null}
       </Stack>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
       <Box component="nav" sx={{ flex: '1 1 auto', p: '12px' }}>
-        {renderNavItems({ pathname, items: navItems })}
+        {renderNavItems({ pathname, items: navItems, collapsed })}
       </Box>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
     </Box>
   );
 }
 
-function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pathname: string }): React.JSX.Element {
+function renderNavItems({
+  items = [],
+  pathname,
+  collapsed,
+}: {
+  items?: NavItemConfig[];
+  pathname: string;
+  collapsed: boolean;
+}): React.JSX.Element {
   const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
     const { key, ...item } = curr;
 
-    acc.push(<NavItem key={key} pathname={pathname} {...item} />);
+    acc.push(<NavItem key={key} pathname={pathname} collapsed={collapsed} {...item} />);
 
     return acc;
   }, []);
@@ -105,61 +146,72 @@ function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pat
 
 interface NavItemProps extends Omit<NavItemConfig, 'items'> {
   pathname: string;
+  collapsed: boolean;
 }
 
-function NavItem({ disabled, external, href, icon, matcher, pathname, title }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, matcher, pathname, title, collapsed }: NavItemProps): React.JSX.Element {
   const active = isNavItemActive({ disabled, external, href, matcher, pathname });
   const Icon = icon ? navIcons[icon] : null;
 
-  return (
-    <li>
-      <Box
-        {...(href
-          ? {
-              component: external ? 'a' : RouterLink,
-              href,
-              target: external ? '_blank' : undefined,
-              rel: external ? 'noreferrer' : undefined,
-            }
-          : { role: 'button' })}
-        sx={{
-          alignItems: 'center',
-          borderRadius: 1,
-          color: 'var(--NavItem-color)',
-          cursor: 'pointer',
-          display: 'flex',
-          flex: '0 0 auto',
-          gap: 1,
-          p: '6px 16px',
-          position: 'relative',
-          textDecoration: 'none',
-          whiteSpace: 'nowrap',
-          ...(disabled && {
-            bgcolor: 'var(--NavItem-disabled-background)',
-            color: 'var(--NavItem-disabled-color)',
-            cursor: 'not-allowed',
-          }),
-          ...(active && { bgcolor: 'var(--NavItem-active-background)', color: 'var(--NavItem-active-color)' }),
-        }}
-      >
-        <Box sx={{ alignItems: 'center', display: 'flex', justifyContent: 'center', flex: '0 0 auto' }}>
-          {Icon ? (
-            <Icon
-              fill={active ? 'var(--NavItem-icon-active-color)' : 'var(--NavItem-icon-color)'}
-              fontSize="var(--icon-fontSize-md)"
-              weight={active ? 'fill' : undefined}
-            />
-          ) : null}
-        </Box>
+  const content = (
+    <Box
+      {...(href
+        ? {
+            component: external ? 'a' : RouterLink,
+            href,
+            target: external ? '_blank' : undefined,
+            rel: external ? 'noreferrer' : undefined,
+          }
+        : { role: 'button' })}
+      sx={{
+        alignItems: 'center',
+        borderRadius: 1,
+        color: 'var(--NavItem-color)',
+        cursor: 'pointer',
+        display: 'flex',
+        flex: '0 0 auto',
+        gap: collapsed ? 0 : 1,
+        justifyContent: collapsed ? 'center' : undefined,
+        p: collapsed ? '10px 0' : '6px 16px',
+        position: 'relative',
+        textDecoration: 'none',
+        whiteSpace: 'nowrap',
+        ...(disabled && {
+          bgcolor: 'var(--NavItem-disabled-background)',
+          color: 'var(--NavItem-disabled-color)',
+          cursor: 'not-allowed',
+        }),
+        ...(active && { bgcolor: 'var(--NavItem-active-background)', color: 'var(--NavItem-active-color)' }),
+      }}
+    >
+      <Box sx={{ alignItems: 'center', display: 'flex', justifyContent: 'center', flex: '0 0 auto' }}>
+        {Icon ? (
+          <Icon
+            fill={active ? 'var(--NavItem-icon-active-color)' : 'var(--NavItem-icon-color)'}
+            fontSize="var(--icon-fontSize-md)"
+            weight={active ? 'fill' : undefined}
+          />
+        ) : null}
+      </Box>
+      {collapsed ? null : (
         <Box sx={{ flex: '1 1 auto' }}>
-          <Typography
-            component="span"
-            sx={{ color: 'inherit', fontSize: '0.875rem', fontWeight: 500, lineHeight: '28px' }}
-          >
+          <Typography component="span" sx={{ color: 'inherit', fontSize: '0.875rem', fontWeight: 500, lineHeight: '28px' }}>
             {title}
           </Typography>
         </Box>
-      </Box>
+      )}
+    </Box>
+  );
+
+  return (
+    <li>
+      {collapsed ? (
+        <Tooltip title={title} placement="right">
+          {content}
+        </Tooltip>
+      ) : (
+        content
+      )}
     </li>
   );
 }

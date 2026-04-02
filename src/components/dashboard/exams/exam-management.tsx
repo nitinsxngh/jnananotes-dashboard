@@ -28,6 +28,8 @@ import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 
+import { formatExamDisplayName } from '@/lib/format-exam-display-name';
+
 type Section = { _id: string; name: string };
 type Chapter = { _id: string; name: string; sections: Section[] };
 type Subject = { _id: string; name: string; chapters: Chapter[] };
@@ -327,7 +329,7 @@ export function ExamManagement(): React.JSX.Element {
         }}
       >
         <SyllabusView
-          title={selectedExam ? `${selectedExam.name} Syllabus` : 'Syllabus'}
+          title={selectedExam ? `${formatExamDisplayName(selectedExam.name)} Syllabus` : 'Syllabus'}
           subjects={syllabus.subjects}
           onAddSubject={addSubject}
           subjectValue={subjectName}
@@ -438,14 +440,14 @@ function MajorExamList({
             <Box key={major._id}>
               <ListItemButton selected={major._id === selectedId} onClick={(): void => onSelect(major._id)}>
                 <Avatar
-                  alt={major.name}
+                  alt={formatExamDisplayName(major.name)}
                   src={major.logoUrl}
                   sx={{ bgcolor: 'var(--mui-palette-neutral-200)', color: 'var(--mui-palette-text-primary)', mr: 1 }}
                 >
-                  {major.name.slice(0, 1).toUpperCase()}
+                  {formatExamDisplayName(major.name).slice(0, 1).toUpperCase()}
                 </Avatar>
                 <Box sx={{ flex: 1 }}>
-                  <ListItemText primary={major.name} />
+                  <ListItemText primary={formatExamDisplayName(major.name)} />
                 </Box>
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                   <LogoUploadIconButton
@@ -576,7 +578,7 @@ function ExamList({
             <Typography variant="h6">Exams</Typography>
             {majorLabel ? (
               <Typography color="text.secondary" variant="caption">
-                {majorLabel}
+                {formatExamDisplayName(majorLabel)}
               </Typography>
             ) : null}
           </Stack>
@@ -605,7 +607,7 @@ function ExamList({
             <Box key={exam._id}>
               <ListItemButton selected={exam._id === selectedId} onClick={(): void => onSelect(exam._id)}>
                 <Box sx={{ flex: 1 }}>
-                  <ListItemText primary={exam.name} />
+                  <ListItemText primary={formatExamDisplayName(exam.name)} />
                 </Box>
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                   <IconButton aria-label="Rename exam" size="small" onClick={(): void => onRename(exam)}>

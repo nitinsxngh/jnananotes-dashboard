@@ -15,6 +15,8 @@ import Typography from '@mui/material/Typography';
 import { BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
 import { ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
+import { ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 
 import { usePopover } from '@/hooks/use-popover';
 import { SyncExamsToFirestoreButton } from '@/components/dashboard/sync/sync-exams-to-firestore-button';
@@ -30,7 +32,13 @@ type LoginEvent = {
 
 const LOGIN_EVENTS_KEY = 'jnana-login-events';
 
-export function MainNav(): React.JSX.Element {
+export function MainNav({
+  sideNavCollapsed,
+  onToggleSideNav,
+}: {
+  sideNavCollapsed?: boolean;
+  onToggleSideNav?: () => void;
+}): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
 
   const userPopover = usePopover<HTMLDivElement>();
@@ -86,6 +94,13 @@ export function MainNav(): React.JSX.Element {
             >
               <ListIcon />
             </IconButton>
+            {onToggleSideNav ? (
+              <Tooltip title={sideNavCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+                <IconButton onClick={onToggleSideNav} sx={{ display: { xs: 'none', lg: 'inline-flex' } }}>
+                  {sideNavCollapsed ? <ArrowRightIcon /> : <ArrowLeftIcon />}
+                </IconButton>
+              </Tooltip>
+            ) : null}
             <Tooltip title="Search">
               <IconButton>
                 <MagnifyingGlassIcon />
