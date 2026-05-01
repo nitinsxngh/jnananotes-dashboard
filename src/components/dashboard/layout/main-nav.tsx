@@ -1,0 +1,175 @@
+'use client';
+
+import * as React from 'react';
+import Avatar from '@mui/material/Avatar';
+import Badge from '@mui/material/Badge';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import Popover from '@mui/material/Popover';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import { BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
+import { ListIcon } from '@phosphor-icons/react/dist/ssr/List';
+import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
+import { ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
+
+import { usePopover } from '@/hooks/use-popover';
+import { SyncExamsToFirestoreButton } from '@/components/dashboard/sync/sync-exams-to-firestore-button';
+
+import { MobileNav } from './mobile-nav';
+import { UserPopover } from './user-popover';
+
+type LoginEvent = {
+  id: string;
+  email: string;
+  timestamp: string;
+};
+
+const LOGIN_EVENTS_KEY = 'jnana-login-events';
+
+export function MainNav({
+  sideNavCollapsed,
+  onToggleSideNav,
+}: {
+  sideNavCollapsed?: boolean;
+  onToggleSideNav?: () => void;
+}): React.JSX.Element {
+  const [openNav, setOpenNav] = React.useState<boolean>(false);
+
+  const userPopover = usePopover<HTMLDivElement>();
+  const notificationsPopover = usePopover<HTMLButtonElement>();
+  const [loginEvents, setLoginEvents] = React.useState<LoginEvent[]>([]);
+
+  const loadLoginEvents = React.useCallback(() => {
+    try {
+      const raw = localStorage.getItem(LOGIN_EVENTS_KEY);
+      const parsed = raw ? (JSON.parse(raw) as LoginEvent[]) : [];
+      setLoginEvents(parsed);
+    } catch {
+      setLoginEvents([]);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadLoginEvents();
+    const handleStorage = (event: StorageEvent): void => {
+      if (event.key === LOGIN_EVENTS_KEY) {
+        loadLoginEvents();
+      }
+    };
+    globalThis.addEventListener('storage', handleStorage);
+    return () => {
+      globalThis.removeEventListener('storage', handleStorage);
+    };
+  }, [loadLoginEvents]);
+
+  return (
+    <React.Fragment>
+      <Box
+        component="header"
+        sx={{
+          borderBottom: '1px solid var(--mui-palette-divider)',
+          backgroundColor: 'var(--mui-palette-background-paper)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 'var(--mui-zIndex-appBar)',
+        }}
+      >
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ alignItems: 'center', justifyContent: 'space-between', minHeight: '64px', px: 2 }}
+        >
+          <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
+            <IconButton
+              onClick={(): void => {
+                setOpenNav(true);
+              }}
+              sx={{ display: { lg: 'none' } }}
+            >
+              <ListIcon />
+            </IconButton>
+            {onToggleSideNav ? (
+              <Tooltip title={sideNavCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+                <IconButton onClick={onToggleSideNav} sx={{ display: { xs: 'none', lg: 'inline-flex' } }}>
+                  {sideNavCollapsed ? <ArrowRightIcon /> : <ArrowLeftIcon />}
+                </IconButton>
+              </Tooltip>
+            ) : null}
+            <Tooltip title="Search">
+              <IconButton>
+                <MagnifyingGlassIcon />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+          <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
+            <SyncExamsToFirestoreButton />
+            <Tooltip title="Notifications">
+              <Badge badgeContent={loginEvents.length} color="success" variant={loginEvents.length > 0 ? 'dot' : 'standard'}>
+                <IconButton
+                  onClick={() => {
+                    loadLoginEvents();
+                    notificationsPopover.handleOpen();
+                  }}
+                  ref={notificationsPopover.anchorRef}
+                >
+                  <BellIcon />
+                </IconButton>
+              </Badge>
+            </Tooltip>
+            <Avatar
+              onClick={userPopover.handleOpen}
+              ref={userPopover.anchorRef}
+              src="/logo.png"
+              sx={{
+                border: '1px solid var(--mui-palette-divider)',
+                cursor: 'pointer',
+              }}
+            />
+          </Stack>
+        </Stack>
+      </Box>
+      <UserPopover anchorEl={userPopover.anchorRef.current} onClose={userPopover.handleClose} open={userPopover.open} />
+      <Popover
+        anchorEl={notificationsPopover.anchorRef.current}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        onClose={notificationsPopover.handleClose}
+        open={notificationsPopover.open}
+        slotProps={{ paper: { sx: { width: 320 } } }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Typography variant="subtitle1">Login Activity</Typography>
+          {loginEvents.length > 0 ? (
+            <List disablePadding>
+              {loginEvents.map((event) => (
+                <ListItem key={event.id} sx={{ px: 0 }}>
+                  <ListItemText
+                    primary={event.email}
+                    secondary={new Date(event.timestamp).toLocaleString()}
+                    primaryTypographyProps={{ variant: 'body2' }}
+                    secondaryTypographyProps={{ variant: 'caption' }}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography color="text.secondary" variant="body2" sx={{ mt: 1 }}>
+              No login records yet.
+            </Typography>
+          )}
+        </Box>
+      </Popover>
+      <MobileNav
+        onClose={() => {
+          setOpenNav(false);
+        }}
+        open={openNav}
+      />
+    </React.Fragment>
+  );
+}
