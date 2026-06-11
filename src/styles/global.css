@@ -1,0 +1,85 @@
+/* Remove if fonts are not used */
+@import '~@fontsource/inter/100.css';
+@import '~@fontsource/inter/200.css';
+@import '~@fontsource/inter/300.css';
+@import '~@fontsource/inter/400.css';
+@import '~@fontsource/inter/500.css';
+@import '~@fontsource/inter/600.css';
+@import '~@fontsource/inter/700.css';
+@import '~@fontsource/inter/800.css';
+@import '~@fontsource/inter/900.css';
+@import '~@fontsource/roboto-mono/300.css';
+@import '~@fontsource/roboto-mono/400.css';
+@import '~@fontsource/plus-jakarta-sans/600.css';
+@import '~@fontsource/plus-jakarta-sans/700.css';
+
+/* Variables */
+:root {
+  --icon-fontSize-sm: 1rem;
+  --icon-fontSize-md: 1.25rem;
+  --icon-fontSize-lg: 1.5rem;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--mui-palette-primary-main);
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+}
+
+/* Global route loader */
+.app-loader {
+  align-items: center;
+  background: var(--mui-palette-background-default);
+  color: var(--mui-palette-text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100vh;
+  justify-content: center;
+  width: 100vw;
+}
+
+.app-loader__logo {
+  animation: appLoaderPulse 1.6s ease-in-out infinite;
+  height: 64px;
+  width: 64px;
+}
+
+.app-loader__ring {
+  animation: appLoaderSpin 1.2s linear infinite;
+  border: 2px solid var(--mui-palette-divider);
+  border-top-color: var(--mui-palette-primary-main);
+  border-radius: 50%;
+  height: 84px;
+  width: 84px;
+}
+
+.app-loader__text {
+  font-size: 0.9rem;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+@keyframes appLoaderSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes appLoaderPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
